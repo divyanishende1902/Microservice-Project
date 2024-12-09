@@ -5,6 +5,7 @@ import com.mcr.user.service.entities.Hotel;
 import com.mcr.user.service.entities.User;
 import com.mcr.user.service.exception.ResourceNotFoundException;
 import com.mcr.user.service.entities.Rating;
+import com.mcr.user.service.external.services.HotelService;
 import com.mcr.user.service.repository.UserRepository;
 import com.mcr.user.service.services.UserServices;
 import org.modelmapper.ModelMapper;
@@ -30,8 +31,12 @@ public class UserServiceImpl implements UserServices {
 
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private HotelService hotelService;
 
     private Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     
@@ -102,6 +107,8 @@ public class UserServiceImpl implements UserServices {
     public UserDto getSingleUser(String userId) {
         //get user from database with the help of user repository
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with given id"));
+
+
         //fetch rating of the above user from rating service
         //http://localhost:8083/ratings/users/45f2b3df-b301-4562-83fe-cf77660e1ad3
         Rating[] ratingsOfUser = restTemplate.getForObject("http://REVIEWSERVICE/ratings/users/"+user.getUserId(), Rating[].class);
@@ -115,9 +122,10 @@ public class UserServiceImpl implements UserServices {
             //api call to hotel service to get the hotel
             //http://localhost:8082/hotels/b16b2f74-bd8f-473d-8c27-491f8628e864
 
-            ResponseEntity<Hotel> forEntity = restTemplate.getForEntity("http://HOTELSERVICE/hotels/"+rating.getHotelId(), Hotel.class);
-            Hotel hotel = forEntity.getBody();
-            logger.info("Response status code: {}",forEntity.getStatusCode());
+           // ResponseEntity<Hotel> forEntity = restTemplate.getForEntity("http://HOTELSERVICE/hotels/"+rating.getHotelId(), Hotel.class);
+
+            Hotel hotel = hotelService.getHotel(rating.getHotelId());
+            //logger.info("Response status code: {}",forEntity.getStatusCode());
             //set the hotel rating
             rating.setHotel(hotel);
             //return the rating
